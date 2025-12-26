@@ -4,12 +4,21 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
-# Настройка API ключа (лучше задать в Environment Variables на Render как GEMINI_KEY)
+# 🔑 Настройка API ключа
 api_key = os.getenv("GEMINI_KEY", "AIzaSyC0hq3Xqm5ov-TG5acKCy3Um_W5KJJtMko")
 genai.configure(api_key=api_key)
 
-# Используем стабильную модель
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+# Используем максимально стабильное имя модели
+# В некоторых версиях SDK префикс 'models/' обязателен или, наоборот, лишний
+MODEL_NAME = "gemini-1.5-flash" 
+
+try:
+    model = genai.GenerativeModel(MODEL_NAME)
+except Exception as e:
+    print(f"Ошибка инициализации {MODEL_NAME}: {e}")
+    # Резервный вариант: берем первую подходящую модель из списка доступных
+    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    model = genai.GenerativeModel(available_models[0])
 
 app = FastAPI()
 
@@ -19,25 +28,19 @@ class Req(BaseModel):
 @app.post("/chat")
 async def chat(req: Req):
     try:
+        # Прямой вызов генерации
         response = model.generate_content(req.text)
         
-        # Проверка на наличие валидного контента в ответе
         if response.candidates and response.candidates[0].content.parts:
             return {"answer": response.text, "is_limit": False}
         else:
-            return {
-                "answer": "⚠️ Модель не смогла сформировать ответ. Попробуй изменить запрос.", 
-                "is_limit": False
-            }
+            return {"answer": "⚠️ Модель не смогла дать ответ. Попробуйте другой вопрос.", "is_limit": False}
             
     except Exception as e:
-        # Обработка лимита запросов 429
-        if "429" in str(e) or "quota" in str(e).lower():
-            return {
-                "answer": "⚠️ Лимит запросов исчерпан. Пожалуйста, подождите немного.", 
-                "is_limit": True
-            }
-        return {"answer": f"Ошибка: {str(e)}", "is_limit": False}
+        error_str = str(e)
+        # Обработка лимитов (Quota Exceeded)
+        if "429" in error_str or "quota" in error_str.lower():
+            return {"answer": "⚠️ Лимит запросов исчерпан. Подождите немного.", "is_limit": True}
+        return {"answer": f"Ошибка API: {error_str}", "is_limit": False}
 
-# Раздача статических файлов (index.html)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
