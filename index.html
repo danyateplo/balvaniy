@@ -3,92 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Assistant</title>
+    <title>AI Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root {
-            --bg: #000;
-            --card: #1c1c1e;
-            --accent: #007aff;
-            --text: #fff;
-        }
-
+        :root { --accent: #007aff; --bg: #000; --card: rgba(28, 28, 30, 0.7); }
+        
         body {
-            margin: 0; background: var(--bg); color: var(--text);
+            margin: 0; background: var(--bg); color: #fff;
             font-family: -apple-system, system-ui, sans-serif;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; height: 100vh;
         }
 
-        /* Тонкая статус-панель сверху */
-        .status-bar {
-            padding: 10px 15px; background: rgba(28,28,30,0.8);
-            backdrop-filter: blur(20px); border-bottom: 1px solid #333;
-            display: flex; gap: 10px; z-index: 10;
+        /* Панель настроек сверху */
+        .settings {
+            padding: 12px 16px; background: rgba(20,20,20,0.8);
+            backdrop-filter: blur(20px); border-bottom: 0.5px solid #333;
+            display: flex; align-items: center; gap: 10px; z-index: 100;
         }
         
-        .status-bar input {
-            flex: 1; background: #2c2c2e; border: 1px solid #444;
-            color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 12px; outline: none;
+        .settings input {
+            flex: 1; background: #2c2c2e; border: none; color: #fff;
+            padding: 10px 14px; border-radius: 12px; font-size: 13px; outline: none;
         }
 
         #chat {
             flex: 1; overflow-y: auto; padding: 20px;
-            display: flex; flex-direction: column; gap: 15px;
-            scroll-behavior: smooth;
+            display: flex; flex-direction: column; gap: 16px;
         }
 
         .bubble {
-            max-width: 85%; padding: 12px 16px; border-radius: 18px;
-            font-size: 16px; line-height: 1.4; animation: slideUp 0.3s ease;
-            word-wrap: break-word;
+            max-width: 85%; padding: 14px 18px; border-radius: 22px;
+            font-size: 16px; line-height: 1.45; animation: pop 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
         }
-
-        @keyframes slideUp { from { opacity:0; transform: translateY(10px); } }
+        @keyframes pop { from { opacity: 0; transform: scale(0.95) translateY(10px); } }
 
         .user { align-self: flex-end; background: var(--accent); border-bottom-right-radius: 4px; }
-        .bot { align-self: flex-start; background: var(--card); border-bottom-left-radius: 4px; border: 1px solid #333; }
+        .bot { align-self: flex-start; background: var(--card); border-bottom-left-radius: 4px; border: 1px solid #333; backdrop-filter: blur(10px); }
 
-        /* Стили для кода внутри Markdown */
-        pre { background: #000; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
-        code { font-family: monospace; color: #ff7b72; }
+        /* Код в сообщениях */
+        pre { background: #000; padding: 12px; border-radius: 12px; overflow-x: auto; border: 1px solid #333; }
+        code { font-family: 'SF Mono', monospace; font-size: 13px; color: #4da3ff; }
 
-        .input-area {
-            padding: 15px 15px 35px; background: rgba(28,28,30,0.9);
-            backdrop-filter: blur(20px); border-top: 1px solid #333;
+        .input-container {
+            padding: 15px 15px 35px; background: rgba(10,10,10,0.9);
+            backdrop-filter: blur(20px); border-top: 0.5px solid #333;
         }
 
         .input-wrap {
-            display: flex; background: #2c2c2e; border-radius: 25px;
-            padding: 5px 5px 5px 15px; align-items: center;
+            display: flex; background: #1c1c1e; border-radius: 30px;
+            padding: 6px; align-items: center; border: 1px solid #333;
         }
 
-        input#msg { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; outline: none; }
+        input#msg { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 15px; outline: none; font-size: 16px; }
 
         .send-btn {
-            background: #fff; border: none; width: 34px; height: 34px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
+            background: #fff; width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: none; transition: 0.2s;
         }
+        .send-btn:active { transform: scale(0.85); }
+        .send-btn svg { fill: #000; width: 20px; height: 20px; }
 
-        .send-btn:active { transform: scale(0.9); }
-        .send-btn svg { fill: #000; width: 18px; height: 18px; }
-
-        .loader { font-style: italic; opacity: 0.5; font-size: 14px; }
+        .typing { font-size: 12px; color: #888; margin-bottom: 5px; margin-left: 20px; display: none; }
     </style>
 </head>
 <body>
-    <div class="status-bar">
-        <input type="password" id="api-key" placeholder="Вставь API Key (ai.google.dev)">
+    <div class="settings">
+        <input type="password" id="api-key" placeholder="Вставь API Key от Gemini...">
     </div>
 
     <div id="chat">
         <div class="bubble bot">
-            Привет! Я обновлен. Вставь свой ключ в поле выше и мы можем начинать.
+            <b>Привет!</b> Я готов. Вставь свой ключ сверху и пиши вопрос. <br><br>
+            <small style="opacity: 0.5;">Если будет ошибка, просто перепроверь ключ.</small>
         </div>
     </div>
 
-    <div class="input-area">
+    <div id="typing" class="typing">Gemini печатает...</div>
+
+    <div class="input-container">
         <div class="input-wrap">
             <input id="msg" placeholder="Сообщение..." autocomplete="off">
             <button class="send-btn" onclick="send()">
@@ -100,21 +93,21 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.headerColor = "#1c1c1e";
+        tg.headerColor = "#141414";
 
         const chat = document.getElementById('chat');
         const msgInput = document.getElementById('msg');
         const keyInput = document.getElementById('api-key');
+        const typing = document.getElementById('typing');
 
-        // Авто-загрузка ключа
-        keyInput.value = localStorage.getItem('my_ai_key') || '';
+        keyInput.value = localStorage.getItem('ai_key_v2') || '';
 
-        function addMessage(text, role) {
+        function add(text, role) {
             const div = document.createElement('div');
             div.className = `bubble ${role}`;
             div.innerHTML = role === 'bot' ? marked.parse(text) : text;
             chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
             return div;
         }
 
@@ -122,18 +115,15 @@
             const text = msgInput.value.trim();
             const key = keyInput.value.trim();
 
-            if (!text || !key) {
-                if(!key) alert('Вставь API ключ!');
-                return;
-            }
+            if (!text || !key) return;
 
-            localStorage.setItem('my_ai_key', key);
+            localStorage.setItem('ai_key_v2', key);
             msgInput.value = '';
             tg.HapticFeedback.impactOccurred('medium');
-
-            addMessage(text, 'user');
-            const load = addMessage('...', 'bot');
-            load.classList.add('loader');
+            
+            add(text, 'user');
+            typing.style.display = 'block';
+            chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
 
             try {
                 const res = await fetch('/chat', {
@@ -142,11 +132,11 @@
                     body: JSON.stringify({ text, api_key: key })
                 });
                 const data = await res.json();
-                load.remove();
-                addMessage(data.answer, 'bot');
+                typing.style.display = 'none';
+                add(data.answer, 'bot');
             } catch (e) {
-                load.remove();
-                addMessage('❌ Ошибка сети.', 'bot');
+                typing.style.display = 'none';
+                add('❌ Ошибка связи с сервером.', 'bot');
             }
         }
 
