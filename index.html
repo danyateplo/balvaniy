@@ -241,7 +241,7 @@
 
   async function send() {
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || input.disabled) return;
     
     tg.HapticFeedback.impactOccurred('light');
     input.value = '';
@@ -249,6 +249,7 @@
 
     const load = addMessage('Генерирую ответ...', 'bot');
     load.classList.add('loading');
+    const sendBtn = document.getElementById('send-btn');
 
     try {
       const res = await fetch('/chat', {
@@ -259,10 +260,38 @@
       const data = await res.json();
       load.remove();
       addMessage(data.answer || 'Ошибка API', 'bot');
+
+      // Если бэкенд сообщил о лимите
+      if (data.is_limit) {
+        setLimitMode(20); // Блокировка на 20 секунд
+      }
+
     } catch (e) {
       load.remove();
       addMessage('Ошибка соединения', 'bot');
     }
+  }
+
+  function setLimitMode(seconds) {
+    const sendBtn = document.getElementById('send-btn');
+    let timeLeft = seconds;
+
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = `Подождите ${timeLeft}с...`;
+    
+    const timer = setInterval(() => {
+      timeLeft--;
+      input.placeholder = `Подождите ${timeLeft}с...`;
+      
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.placeholder = "Сообщение...";
+        tg.HapticFeedback.notificationOccurred('success');
+      }
+    }, 1000);
   }
 
   input.addEventListener('keypress', (e) => { if (e.key === 'Enter') send(); });
@@ -270,5 +299,6 @@
 </body>
 
 </html>
+
 
 
