@@ -15,7 +15,7 @@ async def chat(req: Req):
     try:
         # Настройка API на лету для каждого запроса
         genai.configure(api_key=req.api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
         
         response = model.generate_content(req.text)
         
@@ -36,3 +36,4 @@ async def chat(req: Req):
 
 # Раздача index.html
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
