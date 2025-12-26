@@ -7,7 +7,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton(
             "💬 Открыть чат с ИИ",
-            web_app=WebAppInfo(url="http://127.0.0.1:8000")
+            web_app=WebAppInfo(url="https://balvaniy.onrender.com")
         )]
     ])
     await update.message.reply_text("Запусти Mini App:", reply_markup=kb)
@@ -15,3 +15,4 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = Application.builder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.run_polling()
+
