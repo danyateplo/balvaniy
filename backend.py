@@ -13,24 +13,22 @@ class Req(BaseModel):
 @app.post("/chat")
 async def chat(req: Req):
     try:
-        # Настройка модели прямо в запросе
-        genai.configure(api_key=req.api_key)
-        model = genai.GenerativeModel("models/gemini-2.5-flash")
+        # Очищаем ключ от пробелов и лишних символов
+        clean_key = req.api_key.strip()
+        genai.configure(api_key=clean_key)
         
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
         response = model.generate_content(req.text)
         
         if response.candidates and response.candidates[0].content.parts:
-            return {"answer": response.text, "status": "success"}
+            return {"answer": response.text, "status": "ok"}
         else:
-            return {"answer": "⚠️ Модель отклонила запрос по соображениям безопасности.", "status": "filtered"}
+            return {"answer": "🤖 Модель не смогла ответить. Попробуй другой вопрос.", "status": "error"}
             
     except Exception as e:
         err = str(e)
         if "429" in err:
-            return {"answer": "⏳ Лимит исчерпан. Подожди 30 секунд.", "status": "limit"}
-        if "403" in err:
-            return {"answer": "❌ Ключ заблокирован или неверен. Введи другой.", "status": "error"}
+            return {"answer": "⏳ Лимит! Подожди 20-30 секунд.", "status": "limit"}
         return {"answer": f"Ошибка: {err}", "status": "error"}
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
-
