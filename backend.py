@@ -10,7 +10,7 @@ genai.configure(api_key=api_key)
 
 # Используем максимально стабильное имя модели
 # В некоторых версиях SDK префикс 'models/' обязателен или, наоборот, лишний
-MODEL_NAME = "gemini-1.5-flash" 
+MODEL_NAME = "models/gemini-2.5-flash" 
 
 try:
     model = genai.GenerativeModel(MODEL_NAME)
@@ -44,3 +44,4 @@ async def chat(req: Req):
         return {"answer": f"Ошибка API: {error_str}", "is_limit": False}
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
