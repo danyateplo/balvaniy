@@ -1,108 +1,96 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Gemini Pro AI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gemini Premium AI</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
-      --bg-color: #0a0a0c;
-      --card-bg: #161618;
-      --accent-color: #007aff;
-      --accent-gradient: linear-gradient(135deg, #4da3ff, #b285ff);
-      --text-main: #ffffff;
-      --text-dim: #a1a1aa;
+      --bg: #000000;
+      --card: #1c1c1e;
+      --accent: #007aff;
+      --text: #ffffff;
+      --input: #2c2c2e;
     }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
     body {
-      margin: 0; background: var(--bg-color); color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     }
 
-    /* Шапка */
     .header {
-      padding: 16px; background: rgba(22, 22, 24, 0.8);
-      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      text-align: center; z-index: 10;
-    }
-    .header-title {
-      font-size: 18px; font-weight: 700; background: var(--accent-gradient);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      padding: 16px; background: rgba(28, 28, 30, 0.8);
+      backdrop-filter: blur(20px); border-bottom: 0.5px solid #333;
+      text-align: center; font-weight: 700;
     }
 
-    /* Чат */
+    .key-section {
+      padding: 10px 15px; background: #161618; border-bottom: 1px solid #333;
+    }
+    .key-section input {
+      width: 100%; background: var(--input); border: 1px solid #444;
+      color: #fff; padding: 10px; border-radius: 12px; font-size: 13px; outline: none;
+    }
+
     #chat {
       flex: 1; overflow-y: auto; padding: 20px;
-      display: flex; flex-direction: column; gap: 16px;
-      scrollbar-width: none; /* Firefox */
+      display: flex; flex-direction: column; gap: 14px;
+      scrollbar-width: thin; scrollbar-color: #444 transparent;
     }
-    #chat::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+    /* Стильный скроллбар для Chrome/Safari */
+    #chat::-webkit-scrollbar { width: 4px; }
+    #chat::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
 
     .bubble {
       max-width: 85%; padding: 12px 16px; border-radius: 20px;
-      font-size: 16px; line-height: 1.5; position: relative;
-      animation: msgShow 0.3s ease;
+      font-size: 16px; line-height: 1.4; animation: fadeIn 0.3s ease;
     }
-    @keyframes msgShow { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } }
 
-    .user { align-self: flex-end; background: var(--accent-color); border-bottom-right-radius: 4px; }
-    .bot { align-self: flex-start; background: var(--card-bg); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+    .user { align-self: flex-end; background: var(--accent); border-bottom-right-radius: 4px; }
+    .bot { align-self: flex-start; background: var(--card); border-bottom-left-radius: 4px; border: 1px solid #333; }
 
-    .copy-btn {
-      margin-top: 8px; font-size: 11px; color: var(--accent-color);
-      cursor: pointer; text-transform: uppercase; font-weight: 700; opacity: 0.8;
-    }
+    .copy-btn { margin-top: 10px; font-size: 11px; color: #4da3ff; cursor: pointer; font-weight: bold; }
 
-    /* Ввод */
-    .input-box {
-      padding: 12px 16px 34px; background: rgba(22, 22, 24, 0.9);
-      border-top: 1px solid rgba(255,255,255,0.05);
+    .input-area {
+      padding: 12px 12px 34px; background: rgba(28, 28, 30, 0.9);
+      border-top: 1px solid #333;
     }
     .input-wrap {
-      display: flex; align-items: center; background: #242426;
-      border-radius: 24px; padding: 6px 6px 6px 16px;
-      border: 1px solid rgba(255,255,255,0.1); transition: 0.3s;
+      display: flex; background: var(--input); border-radius: 24px;
+      padding: 5px 5px 5px 16px; align-items: center; border: 1px solid #444;
     }
-    .input-wrap:focus-within { border-color: var(--accent-color); background: #2a2a2c; }
-
-    input {
-      flex: 1; background: transparent; border: none; color: #fff;
-      font-size: 16px; outline: none; padding: 8px 0;
-    }
-    button {
+    input#msg { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; padding: 10px 0; outline: none; }
+    
+    button#send-btn {
       background: #fff; border: none; width: 36px; height: 36px;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: 0.2s;
+      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    button:active { transform: scale(0.9); }
-    button:disabled { background: #444; opacity: 0.5; }
-    button svg { fill: #000; width: 18px; height: 18px; }
-
-    .limit-info { font-size: 12px; opacity: 0.6; margin-top: 8px; }
+    button#send-btn svg { fill: #000; width: 18px; height: 18px; }
+    button:disabled { background: #555; opacity: 0.5; }
   </style>
 </head>
 <body>
-  <div class="header"><div class="header-title">Gemini Premium AI</div></div>
+  <div class="header">Gemini AI Premium</div>
   
+  <div class="key-section">
+    <input type="password" id="api-key" placeholder="Вставьте ваш Gemini API Key...">
+  </div>
+
   <div id="chat">
     <div class="bubble bot">
-      Привет! Я готов к работе. О чем пообщаемся?<br><br>
-      <div class="limit-info">
-        ⚠️ История очистится при выходе.<br>
-        ⏳ При лимитах чат заблокируется на короткую паузу.
-      </div>
+      <b>Добро пожаловать!</b><br>
+      Для начала работы вставьте свой API ключ сверху. Я его не храню, он сохраняется только в вашем браузере.<br><br>
+      <small style="opacity: 0.6;">⚠️ История будет очищена после закрытия вкладки.</small>
     </div>
   </div>
 
-  <div class="input-box">
+  <div class="input-area">
     <div class="input-wrap">
-      <input id="input" type="text" placeholder="Спроси меня о чем угодно..." autocomplete="off">
+      <input id="msg" placeholder="Спросите о чем-нибудь..." autocomplete="off">
       <button id="send-btn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
@@ -112,70 +100,82 @@
 <script>
   const tg = window.Telegram.WebApp;
   tg.expand();
-  tg.headerColor = "#161618";
 
   const chat = document.getElementById('chat');
-  const input = document.getElementById('input');
-  const btn = document.getElementById('send-btn');
+  const msgInput = document.getElementById('msg');
+  const keyInput = document.getElementById('api-key');
+  const sendBtn = document.getElementById('send-btn');
+
+  // Загружаем ключ из локального хранилища браузера
+  keyInput.value = localStorage.getItem('user_gemini_key') || '';
 
   function addMessage(text, role) {
     const div = document.createElement('div');
     div.className = `bubble ${role}`;
+    
     if (role === 'bot') {
       div.innerHTML = marked.parse(text);
-      const cp = document.createElement('div');
-      cp.className = 'copy-btn'; cp.innerText = 'Копировать';
-      cp.onclick = () => {
-        navigator.clipboard.writeText(text); cp.innerText = 'Готово!';
-        setTimeout(() => cp.innerText = 'Копировать', 2000);
+      const copy = document.createElement('div');
+      copy.className = 'copy-btn'; copy.innerText = 'КОПИРОВАТЬ';
+      copy.onclick = () => {
+        navigator.clipboard.writeText(text); copy.innerText = 'ГОТОВО!';
+        setTimeout(() => copy.innerText = 'КОПИРОВАТЬ', 2000);
         tg.HapticFeedback.notificationOccurred('success');
       };
-      div.appendChild(cp);
-    } else { div.textContent = text; }
+      div.appendChild(copy);
+    } else {
+      div.textContent = text;
+    }
+
     chat.appendChild(div);
     chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
     return div;
   }
 
   async function send() {
-    const text = input.value.trim();
-    if (!text || btn.disabled) return;
+    const text = msgInput.value.trim();
+    const key = keyInput.value.trim();
+
+    if (!text || sendBtn.disabled) return;
+    if (!key) { alert('Введите API ключ в поле сверху!'); return; }
+
+    localStorage.setItem('user_gemini_key', key); // Сохраняем ключ для удобства
     
-    input.value = '';
+    msgInput.value = '';
     tg.HapticFeedback.impactOccurred('light');
     addMessage(text, 'user');
-    const load = addMessage('Генерирую ответ...', 'bot');
+    const load = addMessage('<i>Думаю...</i>', 'bot');
 
     try {
       const res = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: text, api_key: key })
       });
       const data = await res.json();
       load.remove();
       addMessage(data.answer, 'bot');
 
-      if (data.is_limit) startLockdown(25);
+      if (data.is_limit) startTimer(20);
     } catch (e) {
       load.remove();
-      addMessage('❌ Ошибка связи с сервером.', 'bot');
+      addMessage('❌ Ошибка сети или сервера.', 'bot');
     }
   }
 
-  function startLockdown(sec) {
+  function startTimer(sec) {
     let left = sec;
-    input.disabled = true; btn.disabled = true;
-    const timer = setInterval(() => {
-      input.placeholder = `Лимит! Пауза: ${left}с`;
+    msgInput.disabled = true; sendBtn.disabled = true;
+    const itv = setInterval(() => {
+      msgInput.placeholder = `Лимит! Ждем ${left}с...`;
       if (left-- <= 0) {
-        clearInterval(timer); input.disabled = false; btn.disabled = false;
-        input.placeholder = "Спроси меня о чем угодно...";
+        clearInterval(itv); msgInput.disabled = false; sendBtn.disabled = false;
+        msgInput.placeholder = "Спросите о чем-нибудь...";
       }
     }, 1000);
   }
 
-  input.addEventListener('keypress', (e) => { if(e.key==='Enter') send(); });
+  msgInput.addEventListener('keypress', (e) => { if(e.key==='Enter') send(); });
 </script>
 </body>
 </html>
