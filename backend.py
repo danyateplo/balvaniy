@@ -19,8 +19,18 @@ class Req(BaseModel):
 
 @app.post("/chat")
 def chat(req: Req):
-    r = model.generate_content(req.text)
-    return {"answer": r.text}
+    try:
+        r = model.generate_content(req.text)
+        return {"answer": r.text, "is_limit": False}
+    except Exception as e:
+        # Проверяем на ошибку лимита (Quota Exceeded)
+        if "429" in str(e) or "quota" in str(e).lower():
+            return {
+                "answer": "⚠️ Лимит запросов исчерпан. Пожалуйста, подождите немного.", 
+                "is_limit": True
+            }
+        return {"answer": f"Ошибка: {str(e)}", "is_limit": False}
 
 # отдаём index.html
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
